@@ -1,0 +1,234 @@
+---
+title: "Stat577_Project"
+author: "SaadRafie"
+date: "4/16/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r Red Wine: Exploratory Analysis, echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(lsr)
+library(GGally)
+library(RColorBrewer)
+library(grid)
+library(gridExtra)
+library(ellipse)
+library(MASS)
+library(ellipse)
+library(lattice)
+library(memisc)
+library(reshape2)
+library(scales)
+library(psych)
+
+RedWine <- read.csv2("winequality-red.csv")
+RedWine[,1:11] <- sapply(RedWine[,1:11], as.numeric)
+##RedWine$quality <- as.factor(RedWine$quality)
+summary(RedWine)
+str(RedWine)
+describeBy(RedWine)
+pairs(RedWine)
+
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
+  usr <- par("usr")
+  on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- abs(cor(x, y, use = "complete.obs"))
+  txt <- format(c(r, 0.123456789), digits = digits)[1]
+  txt <- paste(prefix, txt, sep = "")
+  if (missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+  text(0.5, 0.5, txt, cex =  cex.cor * (1 + r) / 2)
+}
+
+panel.hist <- function(x, ...) {
+  usr <- par("usr")
+  on.exit(par(usr))
+  par(usr = c(usr[1:2], 0, 1.5) )
+  h <- hist(x, plot = FALSE)
+  breaks <- h$breaks
+  nB <- length(breaks)
+  y <- h$counts
+  y <- y/max(y)
+  rect(breaks[-nB], 0, breaks[-1], y, col = "white", ...)
+}
+
+pairs(
+  RedWine,
+  upper.panel = panel.cor,
+  diag.panel  = panel.hist,
+  lower.panel = panel.smooth
+)
+
+
+
+##Generating a numerical correlation matrix
+rwCor <- cor(RedWine)
+round(rwCor, digits = 2)
+library(corrplot)
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+corrplot(rwCor, method = "shade", shade.col = NA, tl.col = "black", tl.srt = 45, col = col(200), addCoef.col = "black", cl.pos = "n", order = "AOE")
+
+
+##Univariate plots
+
+##Quality
+ggplot(data = RedWine, aes(x = quality)) +
+  geom_bar(width = 1, color = 'black',fill = I('red'))
+
+##Fixed Acidity
+grid.arrange(ggplot(RedWine, aes( x = 1, y = fixed.acidity ) ) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(4,14)),
+ggplot(data = RedWine, aes(x = fixed.acidity)) +
+  geom_histogram(binwidth = 1, color = 'black',fill = I('red')) + 
+  scale_x_continuous(lim = c(4,16)),ncol = 2)
+summary(RedWine$fixed.acidity)
+
+##Volatile Acidity
+grid.arrange(ggplot(RedWine, aes( x = 1, y = volatile.acidity ) ) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(0,1)),
+ggplot(data = RedWine, aes(x = volatile.acidity)) +
+  geom_histogram(binwidth = 0.05, color = 'black',fill = I('red')) +
+  scale_x_continuous(lim = c(0,2)), ncol = 2)
+summary(RedWine$volatile.acidity)
+
+##Citric Acid
+grid.arrange(ggplot(RedWine, aes( x = 1, y = citric.acid ) ) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ),
+ggplot(data = RedWine, aes(x = citric.acid)) +
+  geom_histogram(binwidth = 0.05, color = 'black',fill = I('red')) +
+  scale_x_continuous(lim = c(0,1)), ncol = 2)
+summary(RedWine$citric.acid)
+
+
+##Residual Sugar
+grid.arrange(ggplot(RedWine, aes( x = 1, y = residual.sugar ) ) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(1,8)),
+ggplot(data = RedWine, aes(x = residual.sugar)) +
+  geom_histogram(binwidth = 0.09, color = 'black',fill = I('red')) +
+  scale_x_continuous(lim = c(1,15)), ncol = 2)
+summary(RedWine$residual.sugar)
+
+##Chlorides
+grid.arrange(ggplot(RedWine, aes( x = 1, y = chlorides ) ) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(0,0.25)),
+ggplot(data = RedWine, aes(x = chlorides)) +
+  geom_histogram(binwidth = 0.05, color = 'black',fill = I('red')) +
+  scale_x_continuous(lim = c(0,0.75)), ncol = 2)
+summary(RedWine$chlorides)
+
+
+##FreeSO2
+grid.arrange(ggplot(RedWine, aes( x = 1, y = free.sulfur.dioxide ) ) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(0,45)),
+ggplot(data = RedWine, aes(x = free.sulfur.dioxide)) +
+  geom_histogram(binwidth = 1, color = 'black',fill = I('red')) +
+  scale_x_continuous(lim = c(0,80)), ncol = 2)
+summary(RedWine$free.sulfur.dioxide)
+
+##TotalSO2
+
+grid.arrange(ggplot(RedWine, aes( x = 1, y = total.sulfur.dioxide ) ) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(0,200)),
+ggplot(data = RedWine, aes(x = total.sulfur.dioxide)) +
+  geom_histogram(binwidth = 10, color = 'black',fill = I('red')) +
+  scale_x_continuous(lim = c(0,200)), ncol = 2)
+summary(RedWine$total.sulfur.dioxide)
+
+##Density
+grid.arrange(ggplot(RedWine, aes( x = 1, y = density ) ) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ),
+ggplot(data = RedWine, aes(x = density)) +
+  geom_histogram(binwidth = 0.001, color = 'black',fill = I('red')), ncol =2)
+summary(RedWine$density)
+
+##pH
+grid.arrange(ggplot(RedWine, aes( x = 1, y = pH ) ) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ),
+ggplot(data = RedWine, aes(x = pH)) +
+  geom_histogram(binwidth = 0.05, color = 'black',fill = I('red')), ncol = 2)
+summary(RedWine$pH)
+
+##Sulfates
+grid.arrange(ggplot(RedWine, aes( x = 1, y = sulphates ) ) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(0,2)),
+ggplot(data = RedWine, aes(x = sulphates)) +
+  geom_histogram(binwidth = 0.1, color = 'black',fill = I('red')) +
+  scale_x_continuous(lim = c(0,2)), ncol = 2)
+summary(RedWine$sulphates)
+
+##Alcohol
+grid.arrange(ggplot(RedWine, aes( x = 1, y = alcohol)) + 
+               geom_jitter(alpha = 0.1 ) +
+               geom_boxplot(alpha = 0.2, color = 'red' ) +
+               scale_y_continuous(lim = c(8,14)),
+ggplot(data = RedWine, aes(x = alcohol)) +
+  geom_histogram(binwidth = 0.2, color = 'black',fill = I('red')) +
+  scale_x_continuous(lim = c(8,14)), ncol = 2)
+summary(RedWine$alcohol)
+```
+
+## ;
+
+
+```{r Red Wine: Logistic Regression, echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+```{r Red Wine: LDA, echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+```{r Red Wine: QDA, echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+```{r Red Wine: KNN, echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+```{r Red Wine: Linear SVM, echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+```{r Red Wine: Kernel SVM, echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+```{r Red Wine: Classification Tree, echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+```{r Red Wine: Bagged Classification Tree, echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+```{r Red Wine: Random Forest, echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+```{r Red Wine: Gradient Boosted Tree, echo=FALSE, message=FALSE, warning=FALSE}
+
+```
